@@ -1,4 +1,5 @@
 # TextClear AI - Image Text Clarification Tool 🔍
+*(Scroll down for the Traditional Chinese version / 向下捲動查看中文版本)*
 
 TextClear AI is a desktop application developed using Python and front-end web technologies. This project integrates the **Real-ESRGAN** deep learning model, specifically designed to restore blurry images and reconstruct text structures, providing users with an intuitive, offline, and local AI image upscaling experience.
 
@@ -10,8 +11,6 @@ TextClear AI is a desktop application developed using Python and front-end web t
 *   **Modular Architecture**: Fully separates front-end static resources from back-end AI inference logic, making future development and model swapping straightforward.
 
 ## 📂 Project Directory Structure
-
-This project adopts the following structure for development and packaging:
 
 ```text
 TextClearAI/
@@ -25,29 +24,22 @@ TextClearAI/
 │   └── js/                  # Front-end interactive logic
 ├── image/                   # UI and application icons
 │   └── icon.ico             # Custom software icon
-└── .gitignore               # Git ignore list (prevents uploading huge models & cache)
+└── .gitignore               # Git ignore list
+```
 
-🚀 For General Users (No Installation Required)
-If you just want to use this software to restore images and do not need to modify the code, please follow these steps:
-
-Go to the Releases page of this project.
+## 🚀 For General Users (No Installation Required)
+Go to the Releases page.
 
 Download the latest version of the TextClearAI_v1.x.zip archive.
 
 Extract the archive to any folder of your choice.
 
 Double-click TextClearAI.exe to launch the application.
-
-💻 For Developers (Run and Build from Source)
-If you wish to contribute to the development, swap out AI models, or modify the interface, please refer to the instructions below.
-
+## 💻 For Developers (Run and Build from Source)
 1. Environment Setup
-Please ensure you have Python 3.8+ installed, and create a virtual environment:
-If you wish to contribute to the development, swap out AI models, or modify the interface, please refer to the instructions below.
 
-1. Environment Setup
-Please ensure you have Python 3.8+ installed, and create a virtual environment:
-git clone [https://github.com/yian3690/TextClearAI.git](https://github.com/yian3690/TextClearAI.git)
+```bash
+git clone https://github.com/yian3690/TextClearAI.git
 cd TextClearAI
 python -m venv .venv
 
@@ -55,5 +47,33 @@ python -m venv .venv
 .venv\Scripts\activate
 
 # Install dependencies 
-# (Ensure you have a requirements.txt, or manually install fastapi, uvicorn, pywebview, onnxruntime, etc.)
 pip install -r requirements.txt
+```
+2. Download Model Weights
+Ensure your weights folder contains the following two files for the program to run correctly:
+
+RealESRGAN_x4plus_fp32.onnx
+
+RealESRGAN_x4plus_fp32.onnx.data
+3. Local Development Run
+
+```bash
+python main.py
+```
+
+4. PyInstaller Packaging
+```bash
+pyinstaller --name "TextClearAI" --windowed --icon="image/icon.ico" --add-data "weights;weights" --add-data "static;static" --hidden-import uvicorn --hidden-import fastapi main.py
+```
+## 🛠️ Development & Contributing
+Fork the Project.
+
+Create your Feature Branch (git checkout -b feature/AmazingFeature).
+
+Commit your Changes (git commit -m "Add some AmazingFeature").
+
+Push to the Branch (git push origin feature/AmazingFeature).
+
+Open a Pull Request.
+## 📝 License
+This project is licensed under the MIT License. The Real-ESRGAN model weights used follow the open-source specifications of their original authors.
