@@ -1,11 +1,16 @@
 <p align="center">
-<img src="image/icon.icon" width="850">
+<img src="image/icon.png" width="150">
 </p>
 
-# 🔍 TextClear AI
-### AI-Powered Image Text Enhancement Tool
+<div align="center">
 
-*(Traditional Chinese version is available below / 中文版請往下滑)*
+# TextClear AI
+
+**English | [繁體中文](README_zh-TW.md)**
+
+</div>
+
+### AI-Powered Image Text Enhancement Tool
 
 TextClear AI is a lightweight desktop application designed to enhance blurry text in images using AI super-resolution technology. The project integrates the **Real-ESRGAN** deep learning model with **ONNX Runtime**, providing a fast, offline, and privacy-friendly image enhancement solution without requiring any cloud services.
 
@@ -13,28 +18,28 @@ TextClear AI is a lightweight desktop application designed to enhance blurry tex
 
 ## ✨ Features
 
-- 🖥 **Offline AI Processing**
+- **Offline AI Processing**
   - Performs image enhancement entirely on your local machine using ONNX Runtime.
   - No internet connection or external API is required.
 
-- 🔍 **Text-Oriented Image Enhancement**
+- **Text-Oriented Image Enhancement**
   - Uses the Real-ESRGAN model to reconstruct blurred text and improve image clarity.
   - Suitable for AI-generated images, screenshots, scanned documents, and low-resolution text.
 
-- 🎨 **Modern Desktop Interface**
+- **Modern Desktop Interface**
   - Built with **FastAPI + PyWebView**, allowing modern HTML/CSS/JavaScript interfaces to run as a native desktop application.
 
-- 📦 **Standalone Windows Executable**
+- **Standalone Windows Executable**
   - Packaged with PyInstaller.
   - Users can simply download and run the application without installing Python.
 
-- 🧩 **Modular Project Architecture**
+- **Modular Project Architecture**
   - Front-end UI and AI inference are fully separated.
   - Easy to maintain, extend, or replace with other AI models.
 
 ---
 
-## 📸 Demo
+## Demo
 
 > *(You can add screenshots or GIFs here.)*
 
@@ -47,7 +52,7 @@ Blurry Text  →  Clear Text
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
 | Component | Technology |
 |------------|------------|
@@ -81,7 +86,7 @@ TextClearAI/
 
 ---
 
-# 🚀 Getting Started
+# Getting Started
 
 ## Option 1 — Download the Executable
 
@@ -123,7 +128,7 @@ pip install -r requirements.txt
 
 ---
 
-## 📥 Download Model Weights
+## Download Model Weights
 
 Place the following files inside the **weights/** directory:
 
@@ -135,7 +140,7 @@ weights/
 
 ---
 
-## ▶️ Run the Application
+## Run the Application
 
 ```bash
 python main.py
@@ -143,7 +148,7 @@ python main.py
 
 ---
 
-## 📦 Build Executable
+## Build Executable
 
 ```bash
 pyinstaller ^
@@ -159,7 +164,7 @@ main.py
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome!
 
@@ -186,7 +191,7 @@ git push origin feature/your-feature
 
 ---
 
-## 📌 Future Improvements
+## Future Improvements
 
 - OCR integration (PaddleOCR / EasyOCR)
 - Drag-and-drop image upload
@@ -197,7 +202,7 @@ git push origin feature/your-feature
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the **MIT License**.
 
