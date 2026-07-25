@@ -41,16 +41,10 @@ TextClear AI is a lightweight desktop application designed to enhance blurry tex
 
 ## Demo
 
-> *(You can add screenshots or GIFs here.)*
+<p align="center">
+<img src="image/interface.png" width="800">
+</p>
 
-Example:
-
-```
-Before  →  After
-Blurry Text  →  Clear Text
-```
-
----
 
 ## Tech Stack
 
