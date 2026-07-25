@@ -1,17 +1,8 @@
-# 指定 PyTorch 抓取 NVIDIA GPU 專用版本
---extra-index-url https://download.pytorch.org/whl/cu121
-
-# 核心套件
-torch
-torchvision
 fastapi
 uvicorn
 python-multipart
-pywebview
 aiofiles
-
-# 影像處理相關套件
-opencv-python
+pywebview
+opencv-python-headless
 numpy
-realesrgan
-
+onnxruntime-gpu
