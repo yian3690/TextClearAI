@@ -26,3 +26,34 @@ TextClearAI/
 ├── image/                   # UI and application icons
 │   └── icon.ico             # Custom software icon
 └── .gitignore               # Git ignore list (prevents uploading huge models & cache)
+
+🚀 For General Users (No Installation Required)
+If you just want to use this software to restore images and do not need to modify the code, please follow these steps:
+
+Go to the Releases page of this project.
+
+Download the latest version of the TextClearAI_v1.x.zip archive.
+
+Extract the archive to any folder of your choice.
+
+Double-click TextClearAI.exe to launch the application.
+
+💻 For Developers (Run and Build from Source)
+If you wish to contribute to the development, swap out AI models, or modify the interface, please refer to the instructions below.
+
+1. Environment Setup
+Please ensure you have Python 3.8+ installed, and create a virtual environment:
+If you wish to contribute to the development, swap out AI models, or modify the interface, please refer to the instructions below.
+
+1. Environment Setup
+Please ensure you have Python 3.8+ installed, and create a virtual environment:
+git clone [https://github.com/yian3690/TextClearAI.git](https://github.com/yian3690/TextClearAI.git)
+cd TextClearAI
+python -m venv .venv
+
+# Activate virtual environment (Windows)
+.venv\Scripts\activate
+
+# Install dependencies 
+# (Ensure you have a requirements.txt, or manually install fastapi, uvicorn, pywebview, onnxruntime, etc.)
+pip install -r requirements.txt
