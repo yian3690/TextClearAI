@@ -14,7 +14,6 @@ from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 
-
 app = FastAPI()
 
 # ==========================================
@@ -30,7 +29,6 @@ def resource_path(relative_path):
         base_path = os.path.dirname(os.path.abspath(__file__))
 
     return os.path.join(base_path, relative_path)
-
 
 # ==========================================
 # 初始化 ONNX Runtime 引擎
@@ -57,24 +55,21 @@ async def enhance_text(
     try:
         image_bytes = await file.read()
         nparr = np.frombuffer(image_bytes, np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        
+        # 1. 讀取圖片時保留潛在的透明通道 (Alpha Channel)
+        img = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED)
 
         if img is None:
             return Response(content="無法讀取圖片", status_code=400)
 
-        # ==========================================
-        # 1. 第一道防線：智慧預先縮圖 (防呆)
-        # ==========================================
-        MAX_INPUT_SIZE = 2500  
+        # 2. 判斷與分離透明通道
+        has_alpha = False
+        if len(img.shape) == 3 and img.shape[2] == 4:
+            has_alpha = True
+            alpha_channel = img[:, :, 3]  # 取出透明通道
+            img = img[:, :, :3]           # 保留 BGR 交給 AI 處理
+
         height, width = img.shape[:2]
-        
-        if max(height, width) > MAX_INPUT_SIZE:
-            scale_ratio = MAX_INPUT_SIZE / max(height, width)
-            new_width = int(width * scale_ratio)
-            new_height = int(height * scale_ratio)
-            img = cv2.resize(img, (new_width, new_height), interpolation=cv2.INTER_AREA)
-            height, width = new_height, new_width
-            print(f"圖片過大，已預先縮小至 {new_width}x{new_height}")
 
         # ==========================================
         # 輔助函式：GPU 尺寸對齊防護 + 完整 BGR 封裝
@@ -101,10 +96,15 @@ async def enhance_text(
             ort_outs = session.run(None, ort_inputs)
             
             # 後處理
+            # 1. 取得 ORT 輸出 (此時記憶體仍屬於 C++ 引擎)
             out = np.squeeze(ort_outs[0], axis=0)
             out = np.transpose(out, (1, 2, 0))
             out = np.nan_to_num(out)
+
+            # 2. 強制分配新的 Python 記憶體，安全斷開與引擎的連結
             out = np.clip(out, 0, 1)
+            
+            # 3. 在 Python 空間內安全地進行矩陣運算與轉型
             out = (out * 255).round().astype(np.uint8)
             
             # 直接轉回 BGR
@@ -117,20 +117,20 @@ async def enhance_text(
             return out
 
         # ==========================================
-        # 2. 第二道防線：動態 Tile 評估策略 (極簡乾淨呼叫)
+        # 1. 動態 Tile 評估策略 (極簡乾淨呼叫)
         # ==========================================
         total_pixels = height * width
         SCALE = 4
 
-        # 🚀 策略 1：下調至 10 萬像素 (因為 FP32 記憶體消耗翻倍)
-        if total_pixels <= 100000:
+        # 策略 1：小圖直接運算
+        if width <= 800 and height <= 800:
             print(f"進入 AI 運算 ({width}x{height})，策略：整張直出 (tile=0)")
             output_img = run_onnx_inference(img)
 
-        # 🛡️ 策略 2：改用對 GPU 記憶體極度友善的微型切塊
+        # 策略 2：改用對 GPU 記憶體極度友善的微型切塊
         else:
-            TILE_SIZE = 192  # 192 是 32 的倍數
-            TILE_PAD = 16    # 192 + 16 + 16 = 224 (完美契合 GPU 矩陣對齊)
+            TILE_SIZE = 400  
+            TILE_PAD = 10    
             print(f"進入 AI 運算 ({width}x{height})，策略：微型反射切塊 (tile={TILE_SIZE})")
 
             out_h, out_w = height * SCALE, width * SCALE
@@ -176,40 +176,71 @@ async def enhance_text(
                     print(f"區塊完成: 貼上位置 ({x*SCALE}, {y*SCALE})")
 
         # ==========================================
-        # 3. 處理使用者指定的縮放比例 (還原 PyTorch 行為)
+        # 2. 處理使用者指定的縮放比例與最大尺寸限制
         # ==========================================
-        if outscale != SCALE:
-            final_h = int(height * outscale)
-            final_w = int(width * outscale)
-            output_img = cv2.resize(output_img, (final_w, final_h), interpolation=cv2.INTER_AREA)
+        MAX_OUTPUT_SIZE = 6000
+        
+        # 計算期望的最終目標尺寸
+        target_w = int(width * outscale)
+        target_h = int(height * outscale)
+        
+        # 確保最終目標尺寸不超過 MAX_OUTPUT_SIZE 限制
+        if max(target_w, target_h) > MAX_OUTPUT_SIZE:
+            ratio = MAX_OUTPUT_SIZE / max(target_w, target_h)
+            target_w = int(target_w * ratio)
+            target_h = int(target_h * ratio)
+            print(f"輸出尺寸超過限制，已自動縮放至 {target_w}x{target_h}")
+
+        # 模型剛生成的原始尺寸 (固定為 4 倍)
+        current_h, current_w = output_img.shape[:2]
+        
+        # 如果目標尺寸與當前的 4 倍尺寸不同，則執行「唯一一次」的重新取樣
+        if target_w != current_w or target_h != current_h:
+            # 若目標比現在小，使用 INTER_AREA (抗鋸齒效果好)；若目標比現在大，使用 INTER_CUBIC
+            interpolation = cv2.INTER_AREA if (target_w < current_w) else cv2.INTER_CUBIC
+            output_img = cv2.resize(output_img, (target_w, target_h), interpolation=interpolation)
 
         # ==========================================
-        # 4. 轉存為 JPEG 回傳
+        # 3. 輸出打包 (自動判斷 PNG 或 JPG)
         # ==========================================
-        is_success, buffer = cv2.imencode(".jpg", output_img)
+        if has_alpha:
+            # 將透明通道依照相同目標尺寸放大 (不需要 AI 算力，一般放大即可)
+            alpha_resized = cv2.resize(alpha_channel, (target_w, target_h), interpolation=cv2.INTER_CUBIC)
+            
+            # 將圖片轉回 4 通道 (BGRA)，並塞回放大後的透明通道
+            output_img = cv2.cvtColor(output_img, cv2.COLOR_BGR2BGRA)
+            output_img[:, :, 3] = alpha_resized
+            
+            # 透明背景必須存成 PNG 格式
+            is_success, buffer = cv2.imencode(".png", output_img)
+            media_type = "image/png"
+        else:
+            # 無透明背景的一般圖片，依舊存 JPG 以節省傳輸體積
+            encode_param = [
+                int(cv2.IMWRITE_JPEG_QUALITY),
+                95
+            ]
+            is_success, buffer = cv2.imencode(".jpg", output_img, encode_param)
+            media_type = "image/jpeg"
+
         if not is_success:
             return Response(content="圖片轉換失敗", status_code=500)
             
         io_buf = io.BytesIO(buffer)
-        return Response(content=io_buf.getvalue(), media_type="image/jpeg")
+        return Response(content=io_buf.getvalue(), media_type=media_type)
 
     except Exception as e:
         print(f"處理錯誤: {str(e)}")
         return Response(content=f"伺服器內部錯誤: {str(e)}", status_code=500)
 
-
-
 # ==========================================
 # 桌面視窗 (PyWebView) 與靜態檔案設定
 # ==========================================
-# 讓 FastAPI 也能透過萬能路徑找到 index.html
-# app.mount("/", StaticFiles(directory=".", html=True), name="static")
 static_dir = resource_path('static')
 app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
 
-
 # ==========================================
-# 【新增】JS 與 Python 的通訊橋樑
+# JS 與 Python 的通訊橋樑
 # ==========================================
 class JS_API:
     def save_image(self, b64_data, default_filename):
@@ -251,7 +282,7 @@ if __name__ == "__main__":
     # 初始化通訊 API
     api = JS_API()
 
-    # 【修改】把 api 綁定到視窗上，並設定全域 window 變數
+    # 把 api 綁定到視窗上，並設定全域 window 變數
     global window
     window = webview.create_window(
         title="TextClear AI - 文字影像清晰化工具", 
@@ -259,7 +290,7 @@ if __name__ == "__main__":
         width=1000,
         height=800,
         min_size=(800, 600),
-        js_api=api  # <--- 【關鍵】讓 JS 可以呼叫 Python
+        js_api=api  # 讓 JS 可以呼叫 Python
     )
     
     webview.start()
