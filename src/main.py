@@ -22,11 +22,12 @@ app = FastAPI()
 def resource_path(relative_path):
     """ 取得資源的絕對路徑，無論是開發環境還是打包後的 EXE 都通用 """
     if getattr(sys, 'frozen', False):
-        # 如果是被 PyInstaller 打包執行的狀態
+        # 如果是被 PyInstaller 打包執行的狀態 (打包後結構會被壓平)
         base_path = sys._MEIPASS
     else:
-        # 如果是在一般開發環境 (python main.py) 執行的狀態
-        base_path = os.path.dirname(os.path.abspath(__file__))
+        # 如果是在一般開發環境 (python src/main.py) 執行的狀態
+        # 因為 main.py 在 src/ 內，所以要用 dirname 往上退回根目錄
+        base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
     return os.path.join(base_path, relative_path)
 
