@@ -201,35 +201,27 @@ async def enhance_text(
             interpolation = cv2.INTER_AREA if (target_w < current_w) else cv2.INTER_CUBIC
             output_img = cv2.resize(output_img, (target_w, target_h), interpolation=interpolation)
 
-        # ==========================================
-        # 3. 輸出打包 (自動判斷 PNG 或 JPG)
+       # ==========================================
+        # 3. 輸出打包 (一律輸出 PNG 以確保無損畫質)
         # ==========================================
         if has_alpha:
-            # 將透明通道依照相同目標尺寸放大 (不需要 AI 算力，一般放大即可)
+            # 將透明通道依照相同目標尺寸放大
             alpha_resized = cv2.resize(alpha_channel, (target_w, target_h), interpolation=cv2.INTER_CUBIC)
             
             # 將圖片轉回 4 通道 (BGRA)，並塞回放大後的透明通道
             output_img = cv2.cvtColor(output_img, cv2.COLOR_BGR2BGRA)
             output_img[:, :, 3] = alpha_resized
-            
-            # 透明背景必須存成 PNG 格式
-            is_success, buffer = cv2.imencode(".png", output_img)
-            media_type = "image/png"
-        else:
-            # 無透明背景的一般圖片，依舊存 JPG 以節省傳輸體積
-            encode_param = [
-                int(cv2.IMWRITE_JPEG_QUALITY),
-                95
-            ]
-            is_success, buffer = cv2.imencode(".jpg", output_img, encode_param)
-            media_type = "image/jpeg"
+        
+        # 無論是否有透明背景，一律編碼為 PNG 格式避免 JPG 壓縮
+        is_success, buffer = cv2.imencode(".png", output_img)
+        media_type = "image/png"
 
         if not is_success:
             return Response(content="圖片轉換失敗", status_code=500)
             
         io_buf = io.BytesIO(buffer)
         return Response(content=io_buf.getvalue(), media_type=media_type)
-
+    
     except Exception as e:
         print(f"處理錯誤: {str(e)}")
         return Response(content=f"伺服器內部錯誤: {str(e)}", status_code=500)
@@ -250,8 +242,13 @@ class JS_API:
             header, encoded = b64_data.split(",", 1)
             data = base64.b64decode(encoded)
             
-            # 呼叫系統原生的「另存新檔」視窗
-            file_types = ('JPEG Image (*.jpg)', 'All files (*.*)')
+            # 確保預設副檔名是 .png
+            if default_filename.lower().endswith('.jpg') or default_filename.lower().endswith('.jpeg'):
+                default_filename = default_filename.rsplit('.', 1)[0] + '.png'
+            
+            # 呼叫系統原生的「另存新檔」視窗 (改成預設 PNG)
+            file_types = ('PNG Image (*.png)', 'All files (*.*)')
+            
             # 注意這裡要用 global 變數 window
             result = window.create_file_dialog(
                 webview.SAVE_DIALOG, 

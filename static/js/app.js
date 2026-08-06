@@ -142,10 +142,10 @@ async function downloadImage() {
     const lastDotIndex = originalFileName.lastIndexOf('.');
     let newFileName = "";
     if (lastDotIndex === -1) {
-        newFileName = originalFileName + "_enhanced.jpg";
+        newFileName = originalFileName + "_enhanced.png"; // 改為 .png
     } else {
         const namePart = originalFileName.substring(0, lastDotIndex);
-        newFileName = namePart + "_enhanced.jpg"; // 強制轉存為 .jpg
+        newFileName = namePart + "_enhanced.png"; // 強制轉存為 .png
     }
 
     // 檢查是否在 PyWebView 桌面軟體環境中
